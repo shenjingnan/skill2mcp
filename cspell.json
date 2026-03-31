@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "biomejs",
+    "tsup",
+    "vitest",
+    "pnpm",
+    "typecheck",
+    "husky",
+    "lintstaged",
+    "nvmrc",
+    "npmrc",
+    "commitlint",
+    "conventionalcommits",
+    "autorelease",
+    "dependabot",
+    "shenjingnan"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "*.min.js",
+    "*.min.d.ts",
+    "pnpm-lock.yaml",
+    ".git"
+  ],
+  "enableFiletypes": true
+}

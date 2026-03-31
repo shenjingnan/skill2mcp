@@ -1,0 +1,70 @@
+{
+  "name": "ai-typescript-starter",
+  "version": "0.2.0",
+  "description": "AI 原生的 TypeScript 启动模板，专为 AI 辅助开发时代打造",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm run typecheck && pnpm run lint",
+    "check:fix": "pnpm run typecheck && pnpm run lint:fix && pnpm run format",
+    "spellcheck": "cspell \"**/*.ts\" \"**/*.md\"",
+    "prepare": "husky",
+    "release": "release-it"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.30.3",
+  "keywords": [
+    "typescript",
+    "ai",
+    "starter",
+    "template",
+    "vitest",
+    "biome",
+    "tsup"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shenjingnan/ai-typescript-starter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shenjingnan/ai-typescript-starter/issues"
+  },
+  "homepage": "https://github.com/shenjingnan/ai-typescript-starter#readme",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.9",
+    "@release-it/conventional-changelog": "^9.0.4",
+    "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "cspell": "^8.16.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "release-it": "^17.10.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^6.0.2",
+    "vitest": "^2.1.8"
+  }
+}
