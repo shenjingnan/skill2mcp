@@ -16,7 +16,9 @@
     "conventionalcommits",
     "autorelease",
     "dependabot",
-    "shenjingnan"
+    "shenjingnan",
+    "frontmatter",
+    "modelcontextprotocol"
   ],
   "ignorePaths": [
     "node_modules",
