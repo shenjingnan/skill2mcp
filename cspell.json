@@ -18,7 +18,8 @@
     "dependabot",
     "shenjingnan",
     "frontmatter",
-    "modelcontextprotocol"
+    "modelcontextprotocol",
+    "rankdir"
   ],
   "ignorePaths": [
     "node_modules",
