@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseFrontmatter, scanAllSkills, scanSkillDirectory } from '../scanner.js';
 
 const FIXTURES_DIR = path.resolve(__dirname, 'fixtures');
@@ -153,6 +154,26 @@ describe('scanSkillDirectory', () => {
     expect(withArgs).toBeDefined();
     expect(withArgs?.frontmatter['argument-hint']).toBe('<test-file>');
   });
+
+  it('should scan .md files as legacy command format', () => {
+    const skills = scanSkillDirectory(FIXTURES_DIR);
+    const legacy = skills.find((s) => s.name === 'legacy-command');
+    expect(legacy).toBeDefined();
+    expect(legacy?.frontmatter.description).toBe('A legacy command file');
+    expect(legacy?.frontmatter['argument-hint']).toBe('<input>');
+  });
+
+  it('should return empty array when readdirSync throws', () => {
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    vi.spyOn(fs, 'readdirSync').mockImplementation(() => {
+      throw new Error('Permission denied');
+    });
+
+    const skills = scanSkillDirectory('/some/dir');
+    expect(skills).toEqual([]);
+
+    vi.restoreAllMocks();
+  });
 });
 
 describe('scanAllSkills', () => {
@@ -172,5 +193,23 @@ describe('scanAllSkills', () => {
   it('should skip non-existent directories', () => {
     const skills = scanAllSkills(['/non/existent']);
     expect(skills).toEqual([]);
+  });
+});
+
+describe('parseSkillFile error handling', () => {
+  it('should return null when readFileSync throws', () => {
+    // 间接测试 parseSkillFile：通过 mock 一个存在目录但有无法读取的文件
+    vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    vi.spyOn(fs, 'readdirSync').mockReturnValue([
+      { name: 'broken.md', isFile: () => true, isDirectory: () => false },
+    ] as never);
+    vi.spyOn(fs, 'readFileSync').mockImplementation(() => {
+      throw new Error('read error');
+    });
+
+    const skills = scanSkillDirectory('/fake/dir');
+    expect(skills).toEqual([]);
+
+    vi.restoreAllMocks();
   });
 });

@@ -110,6 +110,47 @@ describe('registerSkills', () => {
     const result = await handler?.({ args: 'world' });
     expect(result).toBeDefined();
   });
+
+  it('should append argument-hint to description', () => {
+    const { server, tools } = createMockServer();
+    const skills: SkillDefinition[] = [
+      {
+        name: 'hinted-skill',
+        dirPath: '/skills/hinted',
+        filePath: '/skills/hinted/SKILL.md',
+        frontmatter: {
+          description: 'A skill with hint',
+          'argument-hint': '<file-path>',
+        },
+        body: '# Skill',
+      },
+    ];
+
+    registerSkills(server as never, skills, mockConfig);
+    expect(tools[0]?.description).toContain('Arguments: <file-path>');
+  });
+
+  it('should return isError when skill execution throws', async () => {
+    const { server, tools } = createMockServer();
+    const skills: SkillDefinition[] = [
+      {
+        name: 'danger-skill',
+        dirPath: '/skills/danger',
+        filePath: '/skills/danger/SKILL.md',
+        frontmatter: {},
+        body: '```!bash\nrm -rf /\n```',
+      },
+    ];
+
+    registerSkills(server as never, skills, mockConfig);
+    const handler = tools[0]?.handler;
+    const result = (await handler?.({ args: '' })) as {
+      content: Array<{ text: string }>;
+      isError: boolean;
+    };
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('Error:');
+  });
 });
 
 describe('registerRunCommand', () => {
@@ -125,5 +166,51 @@ describe('registerRunCommand', () => {
     const config = { ...mockConfig, enableRunCommand: false };
     registerRunCommand(server as never, config);
     expect(tools).toHaveLength(0);
+  });
+
+  it('should execute command successfully and return output', async () => {
+    const { server, tools } = createMockServer();
+    registerRunCommand(server as never, mockConfig);
+    const handler = tools[0]?.handler;
+    const result = (await handler?.({ command: 'echo success' })) as {
+      content: Array<{ text: string }>;
+      isError: boolean;
+    };
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0]?.text).toContain('success');
+  });
+
+  it('should return isError for non-zero exit code', async () => {
+    const { server, tools } = createMockServer();
+    registerRunCommand(server as never, mockConfig);
+    const handler = tools[0]?.handler;
+    const result = (await handler?.({ command: 'exit 1' })) as {
+      content: Array<{ text: string }>;
+      isError: boolean;
+    };
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('Exit code: 1');
+  });
+
+  it('should return isError for dangerous commands', async () => {
+    const { server, tools } = createMockServer();
+    registerRunCommand(server as never, mockConfig);
+    const handler = tools[0]?.handler;
+    const result = (await handler?.({ command: 'rm -rf /' })) as {
+      content: Array<{ text: string }>;
+      isError: boolean;
+    };
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('Error:');
+  });
+
+  it('should use cwd parameter when provided', async () => {
+    const { server, tools } = createMockServer();
+    registerRunCommand(server as never, mockConfig);
+    const handler = tools[0]?.handler;
+    const result = (await handler?.({ command: 'pwd', cwd: '/' })) as {
+      content: Array<{ text: string }>;
+    };
+    expect(result.content[0]?.text).toContain('/');
   });
 });

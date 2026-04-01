@@ -1,5 +1,31 @@
-import { describe, expect, it } from 'vitest';
-import { executeCommand, extractShellCommands, substituteVariables } from '../executor.js';
+import { EventEmitter } from 'node:events';
+import { describe, expect, it, vi } from 'vitest';
+
+// 使用 vi.hoisted 确保 mock 和变量一起提升
+const { spawnMock } = vi.hoisted(() => ({
+  spawnMock: vi.fn(),
+}));
+
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  spawnMock.mockImplementation((...args: Parameters<typeof actual.spawn>) => actual.spawn(...args));
+  return { ...actual, spawn: spawnMock };
+});
+
+import {
+  executeCommand,
+  executeSkill,
+  extractShellCommands,
+  substituteVariables,
+} from '../executor.js';
+import type { Skill2McpConfig, SkillDefinition } from '../types.js';
+
+const mockConfig: Skill2McpConfig = {
+  skillDirs: [],
+  commandTimeout: 5000,
+  enableRunCommand: true,
+  workingDirectory: process.cwd(),
+};
 
 describe('substituteVariables', () => {
   it('should replace $ARGUMENTS', () => {
@@ -113,5 +139,101 @@ describe('executeCommand', () => {
   it('should respect cwd option', async () => {
     const result = await executeCommand('pwd', '/');
     expect(result.stdout.trim()).toBe('/');
+  });
+
+  it('should handle spawn error', async () => {
+    const mockChild = new EventEmitter() as unknown as import('node:child_process').ChildProcess;
+    Object.defineProperty(mockChild, 'stdout', { value: new EventEmitter(), writable: true });
+    Object.defineProperty(mockChild, 'stderr', { value: new EventEmitter(), writable: true });
+    Object.defineProperty(mockChild, 'kill', { value: vi.fn(), writable: true });
+
+    // 覆盖为返回 mock child
+    const origImpl = spawnMock.getMockImplementation();
+    spawnMock.mockReturnValue(mockChild);
+
+    // 异步触发 error 事件
+    const promise = executeCommand('nonexistent-command-xyz');
+    setImmediate(() => mockChild.emit('error', new Error('spawn ENOENT')));
+    const result = await promise;
+
+    expect(result.exitCode).toBe(-1);
+    expect(result.stderr).toBe('spawn ENOENT');
+
+    // 恢复原始实现
+    if (origImpl) {
+      spawnMock.mockImplementation(origImpl);
+    }
+  });
+});
+
+describe('executeSkill', () => {
+  it('should return body as-is when no commands', async () => {
+    const skill: SkillDefinition = {
+      name: 'static',
+      dirPath: '/skills/static',
+      filePath: '/skills/static/SKILL.md',
+      frontmatter: {},
+      body: 'Hello $ARGUMENTS, no commands here.',
+    };
+
+    const result = await executeSkill(skill, 'world', mockConfig);
+    expect(result).toBe('Hello world, no commands here.');
+  });
+
+  it('should execute code block commands and replace with results', async () => {
+    const skill: SkillDefinition = {
+      name: 'run-echo',
+      dirPath: '/skills/run-echo',
+      filePath: '/skills/run-echo/SKILL.md',
+      frontmatter: {},
+      body: 'Before\n\n```!bash\necho hello\n```\n\nAfter',
+    };
+
+    const result = await executeSkill(skill, '', mockConfig);
+    expect(result).toContain('echo hello');
+    expect(result).toContain('hello');
+    expect(result).toContain('Before');
+    expect(result).toContain('After');
+  });
+
+  it('should execute inline commands and replace with results', async () => {
+    const skill: SkillDefinition = {
+      name: 'inline',
+      dirPath: '/skills/inline',
+      filePath: '/skills/inline/SKILL.md',
+      frontmatter: {},
+      body: 'Result: !`echo 42`',
+    };
+
+    const result = await executeSkill(skill, '', mockConfig);
+    expect(result).toContain('echo 42');
+    expect(result).toContain('42');
+  });
+
+  it('should handle mixed code block and inline commands', async () => {
+    const skill: SkillDefinition = {
+      name: 'mixed',
+      dirPath: '/skills/mixed',
+      filePath: '/skills/mixed/SKILL.md',
+      frontmatter: {},
+      body: 'Inline: !`echo inline-result`\n\n```!bash\necho block-result\n```',
+    };
+
+    const result = await executeSkill(skill, '', mockConfig);
+    expect(result).toContain('inline-result');
+    expect(result).toContain('block-result');
+  });
+
+  it('should use stderr when stdout is empty', async () => {
+    const skill: SkillDefinition = {
+      name: 'stderr-skill',
+      dirPath: '/skills/stderr',
+      filePath: '/skills/stderr/SKILL.md',
+      frontmatter: {},
+      body: '```!bash\necho err-msg >&2\n```',
+    };
+
+    const result = await executeSkill(skill, '', mockConfig);
+    expect(result).toContain('err-msg');
   });
 });
