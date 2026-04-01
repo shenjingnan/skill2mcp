@@ -1,10 +1,13 @@
 {
-  "name": "ai-typescript-starter",
-  "version": "0.2.0",
-  "description": "AI 原生的 TypeScript 启动模板，专为 AI 辅助开发时代打造",
+  "name": "skill2mcp",
+  "version": "0.1.0",
+  "description": "将 Claude Code Skills 转换为 MCP 服务，让远程 Agent 能发现和使用本地 Skill",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "skill2mcp": "./dist/bin.js"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -17,6 +20,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx watch src/index.ts",
+    "start": "node dist/bin.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -36,23 +40,25 @@
   },
   "packageManager": "pnpm@10.30.3",
   "keywords": [
-    "typescript",
+    "mcp",
+    "claude",
+    "skill",
     "ai",
-    "starter",
-    "template",
-    "vitest",
-    "biome",
-    "tsup"
+    "cli"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/shenjingnan/ai-typescript-starter.git"
+    "url": "https://github.com/shenjingnan/skill2mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/shenjingnan/ai-typescript-starter/issues"
+    "url": "https://github.com/shenjingnan/skill2mcp/issues"
   },
-  "homepage": "https://github.com/shenjingnan/ai-typescript-starter#readme",
+  "homepage": "https://github.com/shenjingnan/skill2mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.25.0"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.9",
     "@release-it/conventional-changelog": "^9.0.4",
